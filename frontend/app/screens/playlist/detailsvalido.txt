@@ -1,0 +1,684 @@
+import React, { useState, useEffect, useRef } from "react";
+import {
+    View,
+    Text,
+    StyleSheet,
+    FlatList,
+    Image,
+    TouchableOpacity,
+    ActivityIndicator,
+    RefreshControl,
+    StatusBar,
+    Alert,
+    Dimensions,
+} from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
+import { Audio } from "expo-av";
+import { Colors } from "../../../constants/colors";
+import { Localhost } from "../../../constants/localhost";
+import { Ionicons, FontAwesome } from "@expo/vector-icons";
+import Separator from "../../../components/Separator";
+
+const { width } = Dimensions.get("window");
+// Componente separado para el Header
+const PlaylistHeader = ({ playlist, currentUserId, onMenuPress }) => {
+    const defaultImageUrl =
+        "https://community.spotify.com/t5/image/serverpage/image-id/25294i2836BD1C1A31BDF2";
+
+    // Obtener información del creador si está disponible
+    const creatorName = playlist.owner?.display_name || "Usuario de Spotify";
+
+    // Determinar si el usuario actual es el propietario
+    const isOwner = playlist.owner?.id === currentUserId;
+
+    return (
+        <View style={styles.headerContainer}>
+            <Image
+                source={
+                    playlist.images && playlist.images.length > 0
+                        ? { uri: playlist.images[0].url }
+                        : { uri: defaultImageUrl }
+                }
+                style={styles.headerBackground}
+                resizeMode='cover'
+                blurRadius={2}
+            />
+            <View style={styles.headerOverlay} />
+
+            <View style={styles.headerContent}>
+                <View style={styles.headerTopRow}>
+                    <TouchableOpacity
+                        style={styles.menuButton}
+                        onPress={() => onMenuPress(isOwner)}
+                    >
+                        <Ionicons
+                            name='ellipsis-horizontal'
+                            size={24}
+                            color='white'
+                        />
+                    </TouchableOpacity>
+                </View>
+                <View style={styles.titleContainer}>
+                    <Text style={styles.playlistTitle}>
+                        {playlist.name || "Playlist 1"}
+                    </Text>
+                    <Text style={styles.playlistCreator}>
+                        Creada por {creatorName}
+                    </Text>
+                </View>
+            </View>
+        </View>
+    );
+};
+
+const PlaylistDetail = () => {
+    const router = useRouter();
+    const params = useLocalSearchParams();
+    const playlist = JSON.parse(params.playlist);
+
+    const [tracks, setTracks] = useState([]);
+    const [uniqueTracks, setUniqueTracks] = useState([]); // Nuevo estado para tracks sin duplicados
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [refreshing, setRefreshing] = useState(false);
+
+    // Estados para la reproducción de audio y otros estados sin cambios...
+    const [sound, setSound] = useState(null);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [currentTrackId, setCurrentTrackId] = useState(null);
+    const [loadingAudio, setLoadingAudio] = useState(false);
+    const [previewUrls, setPreviewUrls] = useState({});
+    const [currentUserId, setCurrentUserId] = useState(null);
+    const [menuVisible, setMenuVisible] = useState(false);
+    const [isOwner, setIsOwner] = useState(false);
+
+    // Función para filtrar duplicados
+    const filterDuplicateTracks = (tracksList) => {
+        const trackMap = new Map();
+        let hasDuplicates = false;
+
+        const filtered = tracksList.filter(item => {
+            if (!item || !item.track || !item.track.id) return false;
+
+            if (trackMap.has(item.track.id)) {
+                hasDuplicates = true;
+                return false;
+            }
+
+            trackMap.set(item.track.id, true);
+            return true;
+        });
+
+        if (hasDuplicates) {
+            Alert.alert(
+                "Canciones duplicadas detectadas",
+                "Se han encontrado canciones duplicadas en la lista. Las canciones duplicadas no se mostrarán.",
+                [{ text: "Entendido", style: "default" }]
+            );
+        }
+
+        return filtered;
+    };
+
+    // Obtener la información del usuario actual
+    const fetchCurrentUser = async () => {
+        try {
+            const accessToken = await AsyncStorage.getItem(
+                "spotify_access_token"
+            );
+            if (!accessToken) return;
+
+            const response = await axios.get(
+                `http://${Localhost}:8080/api/spotify/profile`,
+                {
+                    headers: { Authorization: `Bearer ${accessToken}` },
+                }
+            );
+            setCurrentUserId(response.data.id);
+        } catch (error) {
+            console.error("Error al obtener información del usuario:", error);
+        }
+    };
+
+    // Función para manejar el botón de menú
+    const handleMenuPress = (ownerStatus) => {
+        setIsOwner(ownerStatus);
+        setMenuVisible(true);
+
+        // Mostrar opciones basadas en si es propietario o no
+        if (ownerStatus) {
+            Alert.alert(
+                "Opciones de playlist",
+                "¿Qué deseas hacer con esta playlist?",
+                [
+                    {
+                        text: "Añadir canciones",
+                        onPress: handleAddSongs,
+                    },
+                    {
+                        text: "Editar playlist",
+                        onPress: handleEditPlaylist,
+                    },
+                    { text: "Cancelar", style: "cancel" },
+                    {
+                        text: "Eliminar playlist",
+                        onPress: handleDeletePlaylist,
+                        style: "destructive",
+                    },
+                ]
+            );
+        } else {
+            Alert.alert(
+                "Opciones de playlist",
+                "¿Qué deseas hacer con esta playlist?",
+                [
+                    { text: "Cancelar", style: "cancel" },
+                    {
+                        text: "Dejar de seguir",
+                        onPress: handleUnfollowPlaylist,
+                        style: "destructive",
+                    },
+                ]
+            );
+        }
+    };
+
+    // Función para eliminar playlist (solo propietarios)
+    const handleDeletePlaylist = async () => {
+        try {
+            const accessToken = await AsyncStorage.getItem(
+                "spotify_access_token"
+            );
+            if (!accessToken) {
+                Alert.alert("Error", "No se encontró token de acceso");
+                return;
+            }
+
+            // En realidad la API de Spotify no permite eliminar playlists, solo vaciarlas
+            Alert.alert(
+                "Información",
+                "Spotify no permite eliminar playlists por completo. ¿Deseas dejar de seguir esta playlist?",
+                [
+                    { text: "Cancelar", style: "cancel" },
+                    {
+                        text: "Dejar de seguir",
+                        onPress: handleUnfollowPlaylist,
+                    },
+                ]
+            );
+        } catch (error) {
+            console.error("Error:", error);
+            Alert.alert("Error", "No se pudo completar la operación");
+        }
+    };
+
+
+
+    // Función para dejar de seguir playlist
+    const handleUnfollowPlaylist = async () => {
+        try {
+            const accessToken = await AsyncStorage.getItem(
+                "spotify_access_token"
+            );
+            if (!accessToken) {
+                Alert.alert("Error", "No se encontró token de acceso");
+                return;
+            }
+
+            await axios.delete(
+                `http://${Localhost}:8080/api/spotify/playlists/${playlist.id}/followers`,
+                {
+                    headers: { Authorization: `Bearer ${accessToken}` },
+                }
+            );
+
+            Alert.alert(
+                "Éxito",
+                "Has dejado de seguir la playlist correctamente",
+                [
+                    {
+                        text: "OK",
+                        onPress: () => router.back(),
+                    },
+                ]
+            );
+        } catch (error) {
+            console.error("Error al dejar de seguir playlist:", error);
+            Alert.alert("Error", "No se pudo dejar de seguir la playlist");
+        }
+    };
+
+    // Definición del callback de actualización de estado para el reproductor de audio
+    const onPlaybackStatusUpdate = (status) => {
+        if (status.didJustFinish) {
+            setIsPlaying(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchPlaylistTracks();
+        fetchCurrentUser();
+
+        // Limpiar recursos de audio cuando se desmonta el componente
+        return () => {
+            if (sound) {
+                sound.unloadAsync();
+            }
+        };
+    }, []);
+
+    const fetchPlaylistTracks = async () => {
+        try {
+            setLoading(true);
+            const accessToken = await AsyncStorage.getItem(
+                "spotify_access_token"
+            );
+
+            if (!accessToken) {
+                throw new Error("No se encontró token de acceso");
+            }
+
+            const response = await axios.get(
+                `http://${Localhost}:8080/api/spotify/playlists/${playlist.id}/tracks`,
+                {
+                    headers: { Authorization: `Bearer ${accessToken}` },
+                }
+            );
+
+            const receivedTracks = response.data.items || [];
+            setTracks(receivedTracks);
+
+            // Filtrar los tracks duplicados
+            const filteredTracks = filterDuplicateTracks(receivedTracks);
+            setUniqueTracks(filteredTracks);
+
+            setError(null);
+        } catch (err) {
+            console.error("Error al obtener las canciones:", err);
+            setError("No se pudieron cargar las canciones. Intenta más tarde.");
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    };
+
+    // Función para buscar previews en Deezer
+    const searchDeezerPreview = async (trackName, artistName) => {
+        try {
+            const query = encodeURIComponent(`${trackName} ${artistName}`);
+            const response = await axios.get(
+                `https://api.deezer.com/search?q=${query}`
+            );
+
+            if (response.data.data && response.data.data.length > 0) {
+                return response.data.data[0].preview;
+            }
+            return null;
+        } catch (error) {
+            console.error("Error al buscar en Deezer:", error);
+            return null;
+        }
+    };
+
+    // Función para reproducir/pausar audio
+    const handlePlayPause = async (trackId, trackName, artistName) => {
+        try {
+            // Si ya hay un sonido reproduciendo y es la misma pista
+            if (sound && currentTrackId === trackId) {
+                const status = await sound.getStatusAsync();
+                if (status.isLoaded) {
+                    if (status.isPlaying) {
+                        await sound.pauseAsync();
+                        setIsPlaying(false);
+                    } else {
+                        await sound.playAsync();
+                        setIsPlaying(true);
+                    }
+                    return;
+                }
+            }
+
+            // Si hay un sonido previo, detenerlo
+            if (sound) {
+                await sound.unloadAsync();
+                setSound(null);
+            }
+
+            setCurrentTrackId(trackId);
+            setLoadingAudio(true);
+
+            // Verificar si ya tenemos la URL en caché
+            let previewUrl = previewUrls[trackId];
+
+            // Si no está en caché, búscala en Deezer
+            if (!previewUrl) {
+                previewUrl = await searchDeezerPreview(trackName, artistName);
+
+                if (previewUrl) {
+                    // Guardar en caché
+                    setPreviewUrls((prev) => ({
+                        ...prev,
+                        [trackId]: previewUrl,
+                    }));
+                } else {
+                    setLoadingAudio(false);
+                    Alert.alert(
+                        "Error",
+                        "No se encontró una vista previa para esta canción"
+                    );
+                    return;
+                }
+            }
+
+            // Cargar y reproducir el audio
+            const { sound: newSound } = await Audio.Sound.createAsync(
+                { uri: previewUrl },
+                { shouldPlay: true },
+                onPlaybackStatusUpdate
+            );
+
+            setSound(newSound);
+            setIsPlaying(true);
+            setLoadingAudio(false);
+        } catch (error) {
+            console.error("Error al reproducir audio:", error);
+            setLoadingAudio(false);
+            Alert.alert("Error", "No se pudo reproducir el audio");
+        }
+    };
+
+    // Función para editar la playlist
+    const handleEditPlaylist = () => {
+        router.push({
+            pathname: "./EditPlaylist",
+            params: {
+                playlistId: playlist.id,
+                playlistName: playlist.name,
+                playlistDescription: playlist.description || "",
+                playlistImageUrl: playlist.images && playlist.images.length > 0
+                    ? playlist.images[0].url
+                    : "",
+                // Pasamos toda la playlist serializada para tener acceso a datos adicionales si son necesarios
+                playlist: JSON.stringify(playlist)
+            }
+        });
+    };
+
+    const handleAddSongs = () => {
+        router.push({
+            pathname: "./PlaylistAddSongs",
+            params: {
+                playlistId: playlist.id,
+                playlistName: playlist.name,
+                tracks: JSON.stringify(
+                    uniqueTracks.filter(item => item && item.track).map(item => ({
+                        id: item.track.id,
+                        name: item.track.name,
+                        artists: item.track.artists?.map(a => a.name) || [],
+                    }))
+                ),
+            }
+        });
+    };
+
+    const onRefresh = () => {
+        setRefreshing(true);
+        fetchPlaylistTracks();
+    };
+
+    const renderTrackItem = ({ item }) => {
+        const track = item.track;
+        const trackId = track.id;
+        const imageUrl =
+            track.album.images && track.album.images.length > 0
+                ? track.album.images[0].url
+                : "https://community.spotify.com/t5/image/serverpage/image-id/25294i2836BD1C1A31BDF2";
+
+        const artistNames = track.artists
+            .map((artist) => artist.name)
+            .join(", ");
+
+        const isCurrentTrack = currentTrackId === trackId;
+        const isTrackPlaying = isCurrentTrack && isPlaying;
+
+        return (
+            <TouchableOpacity
+                style={styles.trackItem}
+                onPress={() =>
+                    handlePlayPause(trackId, track.name, artistNames)
+                }
+            >
+                <Image source={{ uri: imageUrl }} style={styles.trackImage} />
+                <View style={styles.trackInfo}>
+                    <Text style={styles.trackName} numberOfLines={1}>
+                        {track.name}
+                    </Text>
+                    <Text style={styles.artistName} numberOfLines={1}>
+                        {artistNames}
+                    </Text>
+                </View>
+                <Text style={styles.trackDuration}>
+                    {formatDuration(track.duration_ms)}
+                </Text>
+                {isCurrentTrack && loadingAudio ? (
+                    <ActivityIndicator
+                        size='small'
+                        color={Colors.orange}
+                        style={styles.playButtonContainer}
+                    />
+                ) : (
+                    <TouchableOpacity
+                        style={styles.playButtonContainer}
+                        onPress={(e) => {
+                            e.stopPropagation();
+                            handlePlayPause(trackId, track.name, artistNames);
+                        }}
+                    >
+                        <FontAwesome
+                            name={isTrackPlaying ? "pause" : "play"}
+                            size={16}
+                            color='white'
+                        />
+                    </TouchableOpacity>
+                )}
+            </TouchableOpacity>
+        );
+    };
+
+    // Función para formatear duración en minutos:segundos
+    const formatDuration = (ms) => {
+        const minutes = Math.floor(ms / 60000);
+        const seconds = ((ms % 60000) / 1000).toFixed(0);
+        return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
+    };
+
+    return (
+        <View style={styles.container}>
+            <StatusBar barStyle='light-content' />
+
+            {/* Header separado con las props necesarias */}
+            <PlaylistHeader
+                playlist={playlist}
+                currentUserId={currentUserId}
+                onMenuPress={handleMenuPress}
+            />
+            <Separator height={20} />
+
+            {loading && !refreshing ? (
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size='large' color={Colors.orange} />
+                </View>
+            ) : error ? (
+                <View style={styles.errorContainer}>
+                    <Text style={styles.errorText}>{error}</Text>
+                    <TouchableOpacity
+                        style={styles.retryButton}
+                        onPress={fetchPlaylistTracks}
+                    >
+                        <Text style={styles.retryText}>Reintentar</Text>
+                    </TouchableOpacity>
+                </View>
+            ) : (
+                <FlatList
+                    data={uniqueTracks} // CAMBIAR tracks por uniqueTracks
+                    renderItem={renderTrackItem}
+                    // Mejorar el keyExtractor para garantizar keys únicas
+                    keyExtractor={(item, index) => `${item.track?.id || 'track'}-${index}`}
+                    contentContainerStyle={styles.tracksList}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                            tintColor={Colors.orange}
+                            colors={[Colors.orange]}
+                        />
+                    }
+                    ListEmptyComponent={() => (
+                        <Text style={styles.noTracksText}>
+                            No hay canciones en esta playlist
+                        </Text>
+                    )}
+                />
+            )}
+        </View>
+    );
+};
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: "#121212",
+    },
+    // Estilos para el header
+    headerContainer: {
+        height: "40%",
+        position: "relative",
+        width: "100%",
+    },
+    headerBackground: {
+        position: "absolute",
+        width: "100%",
+        height: "100%",
+    },
+    headerOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: "rgba(0, 0, 0, 0.5)",
+    },
+    headerContent: {
+        flex: 1,
+        justifyContent: "space-between",
+        padding: 16,
+        paddingTop: 40,
+    },
+    headerTopRow: {
+        flexDirection: "row",
+        justifyContent: "flex-end",
+    },
+    titleContainer: {
+        backgroundColor: "rgba(255, 255, 255, 0.2)",
+        padding: 16,
+        position: "absolute",
+        bottom: 0,
+        left: 0,
+        borderTopRightRadius: 20,
+    },
+    playlistCreator: {
+        color: Colors.lightGray,
+        fontSize: 14,
+        marginTop: 5,
+    },
+    menuButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        justifyContent: "center",
+        alignItems: "center",
+        marginTop: 20,
+    },
+    playlistTitle: {
+        color: "white",
+        fontSize: 36,
+        fontWeight: "bold",
+        marginTop: "auto",
+    },
+    // Estilos para la lista de canciones
+    loadingContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    errorContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        padding: 20,
+    },
+    errorText: {
+        color: "white",
+        fontSize: 16,
+        textAlign: "center",
+        marginBottom: 20,
+    },
+    retryButton: {
+        backgroundColor: Colors.orange,
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: 20,
+    },
+    retryText: {
+        color: "black",
+        fontWeight: "bold",
+    },
+    tracksList: {
+        paddingBottom: 20,
+    },
+    trackItem: {
+        flexDirection: "row",
+        alignItems: "center",
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+    },
+    trackImage: {
+        width: 50,
+        height: 50,
+        borderRadius: 4,
+        marginRight: 12,
+    },
+    trackInfo: {
+        flex: 1,
+    },
+    trackName: {
+        color: "white",
+        fontSize: 16,
+        fontWeight: "500",
+    },
+    artistName: {
+        color: "#b3b3b3",
+        fontSize: 14,
+        marginTop: 2,
+    },
+    trackDuration: {
+        color: "#b3b3b3",
+        fontSize: 14,
+        marginLeft: 10,
+    },
+    playButtonContainer: {
+        width: 30,
+        height: 30,
+        borderRadius: 15,
+        backgroundColor: Colors.background,
+        justifyContent: "center",
+        alignItems: "center",
+        marginLeft: 10,
+    },
+    noTracksText: {
+        color: "white",
+        fontSize: 16,
+        textAlign: "center",
+        marginTop: 50,
+    },
+});
+
+export default PlaylistDetail;
