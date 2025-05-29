@@ -1,0 +1,314 @@
+{
+	"info": {
+		"_postman_id": "f50d68e4-1505-4539-bcd5-33e580d003ba",
+		"name": "BeatFinder",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "39479294"
+	},
+	"item": [
+		{
+			"name": "Login",
+			"item": [
+				{
+					"name": "Login",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				},
+				{
+					"name": "Signup",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				},
+				{
+					"name": "New Request",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "BQAESKqI7Mp7WRAiqIwtHOT9p0gTV9r1S7rU0LwnFeaT8E59vUR88mv4ze8ej2410_u3GIB6uOUNjZj9RYwZHwBDkU4ChYFEIYXclOpeNAWTwxRJNKvqnglUfA4_3vFQXdWat-uqzcT5fvky8rPbksQAMXM-4NV1RXjcVpAMw9wyQXGd-Vdc2W3ZcuBfguwIElywQWHEx8TBq7pPlMB9z5XRYpNa2ad0IED_xQuzB63-WDiQNs-7_Pd9m07p-k4-McvyLjO6Q4m9nMUHI73oo161fwssb3wgeYxK4PpiJSIdEkJPBXAA_Wd1oM5T",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/spotify/profile",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"spotify",
+								"profile"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "New Request",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \r\n    \"oldUsername\":\"\",\r\n    newUsername:\"\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{Localhost}}/api/users/change-username",
+							"host": [
+								"{{Localhost}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"change-username"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Playlist",
+			"item": [
+				{
+					"name": "Create",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				},
+				{
+					"name": "Delete",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				},
+				{
+					"name": "Update",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Trophies",
+			"item": [
+				{
+					"name": "get_trophies",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				},
+				{
+					"name": "get_trophiesunlocked",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				},
+				{
+					"name": "Inicializar",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Statistics",
+			"item": [
+				{
+					"name": "get_statistics",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				},
+				{
+					"name": "Increment genres",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				},
+				{
+					"name": "Increment genres Copy",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "History",
+			"item": [
+				{
+					"name": "Get",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				},
+				{
+					"name": "Add",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"user\": \"correo@ejemplo.com\",\r\n  \"spotifyId\": \"4iV5W9uYEdYUVa79Axb7Rh\",\r\n  \"title\": \"Nombre de la canción\",\r\n  \"artist\": \"Nombre del artista\",\r\n  \"album\": \"Nombre del álbum\",\r\n  \"image\": \"https://i.scdn.co/image/ab67616d0000b273...\",\r\n  \"preview\": \"https://p.scdn.co/mp3-preview/...\",\r\n  \"decision\": \"like\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Albums",
+			"item": [
+				{
+					"name": "New Request",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Artist",
+			"item": [
+				{
+					"name": "Añadir",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\": \"The Weeknd\",\r\n    \"imageUrl\": \"https://example.com/weeknd.jpg\",\r\n    \"spotifyId\": \"1234spotify\",\r\n    \"dezeerId\": \"5678deezer\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{Localhost}}/api/artist",
+							"host": [
+								"{{Localhost}}"
+							],
+							"path": [
+								"api",
+								"artist"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "tracks",
+			"item": [
+				{
+					"name": "Añadir",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				},
+				{
+					"name": "Añadir Copy",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "Localhost",
+			"value": "http://localhost:8080",
+			"type": "default"
+		},
+		{
+			"key": "spotifyid",
+			"value": "daaaviiid_05",
+			"type": "default"
+		},
+		{
+			"key": "playlistid",
+			"value": "2In0QIWRWoxxn3VYmCmffL",
+			"type": "default"
+		},
+		{
+			"key": "username",
+			"value": "Comsiodofid",
+			"type": "default"
+		}
+	]
+}
