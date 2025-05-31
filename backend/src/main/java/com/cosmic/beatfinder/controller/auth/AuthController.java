@@ -14,6 +14,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.HashMap;
+import java.util.Map;
+
 
 @RestController
 @RequestMapping("/api/auth")
@@ -33,9 +36,11 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@RequestBody LogoutRequestDTO logoutRequestDTO) {
+    public ResponseEntity<Map<String, String>> logout(@RequestBody LogoutRequestDTO logoutRequestDTO) {
         authService.logout(logoutRequestDTO);
-        return new ResponseEntity<>(HttpStatus.OK);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Usuario eliminado");
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     @PostMapping("/signup")

@@ -9,12 +9,9 @@ import java.util.Optional;
 @Repository
 public interface ArtistRepository extends JpaRepository<Artist, Long> {
     List<Artist> findByName(String name);
-    List<Artist> findByDezeerId(String dezeerId);
-    Optional<Artist> findBySpotifyId(String spotifyId);
 
-    // Método para buscar el primer Artist por nombre (útil para imágenes)
-    default Optional<Artist> findFirstByName(String name) {
-        return findByName(name).stream().findFirst();
-    }
+    Optional<Artist> findBySpotifyId(String spotifyId);
+    List<Artist> findByDezeerId(String dezeerId);
+
 
 }

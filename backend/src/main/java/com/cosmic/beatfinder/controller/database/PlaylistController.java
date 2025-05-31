@@ -32,4 +32,24 @@ public class PlaylistController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    @DeleteMapping("/{playlistId}")
+    public ResponseEntity<Void> deletePlaylist(@PathVariable String playlistId) {
+        try {
+            playlistService.deletePlaylistById(playlistId);
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PutMapping("/{playlistId}")
+    public ResponseEntity<PlaylistDTO> updatePlaylist(@PathVariable String playlistId, @RequestBody PlaylistDTO playlistDTO) {
+        PlaylistDTO updatedPlaylist = playlistService.updatePlaylist(playlistId, playlistDTO);
+        if (updatedPlaylist != null) {
+            return ResponseEntity.ok(updatedPlaylist);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }

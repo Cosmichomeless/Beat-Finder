@@ -46,10 +46,11 @@ public class AlbumsController {
 
 
     @PostMapping
-    public ResponseEntity<Albums> create(@RequestBody AlbumsDTO albumsDTO) {
+    public ResponseEntity<Albums> createOrUpdate(@RequestBody AlbumsDTO albumsDTO) {
         try {
-            return new ResponseEntity<>(albumsService.create(albumsDTO), HttpStatus.OK);
+            return new ResponseEntity<>(albumsService.createOrUpdate(albumsDTO), HttpStatus.OK);
         } catch (Exception e) {
+            e.printStackTrace();
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }

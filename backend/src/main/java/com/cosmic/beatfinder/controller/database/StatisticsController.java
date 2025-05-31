@@ -127,58 +127,7 @@ public class StatisticsController {
     /**
      * Obtiene el historial de evolución de una métrica específica
      */
-    @GetMapping("/history/{username}/{metricType}")
-    public ResponseEntity<Map<String, Object>> getMetricHistory(
-            @PathVariable String username,
-            @PathVariable String metricType,
-            @RequestParam(defaultValue = "7") int days) {
 
-        try {
-            // En una implementación real, consultaríamos el historial de la base de datos
-            // Por ahora simulamos datos con la tendencia desde el valor actual
-
-            UserMetric currentMetric = userMetricRepository.findByUsernameAndMetricType(username, metricType)
-                    .orElse(new UserMetric());
-
-            int currentValue = 0;
-            try {
-                currentValue = Integer.parseInt(currentMetric.getValue());
-            } catch (Exception e) {
-                // Si no hay valor o no es numérico, usar 0
-            }
-
-            // Crear datos históricos simulados (en producción se obtendrían de una tabla de historial)
-            List<Map<String, Object>> history = new ArrayList<>();
-            Date today = new Date();
-            SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
-
-            for (int i = days - 1; i >= 0; i--) {
-                Calendar cal = Calendar.getInstance();
-                cal.setTime(today);
-                cal.add(Calendar.DATE, -i);
-
-                Map<String, Object> point = new HashMap<>();
-                point.put("date", dateFormat.format(cal.getTime()));
-
-                // Simular progresión lineal (en producción serían datos reales)
-                double factor = (days - i) / (double)days;
-                int value = (int)(currentValue * factor);
-                point.put("value", value);
-
-                history.add(point);
-            }
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("metric_type", metricType);
-            response.put("history", history);
-
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", "Error al obtener historial: " + e.getMessage());
-            return ResponseEntity.internalServerError().body(errorResponse);
-        }
-    }
 
     /**
      * Obtiene estadísticas detalladas del historial musical

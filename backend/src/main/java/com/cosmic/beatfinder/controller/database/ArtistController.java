@@ -26,6 +26,16 @@ public class ArtistController {
         }
     }
 
+    @PostMapping
+    public ResponseEntity<Artist> createOrUpdate(@RequestBody ArtistDTO artistDTO) {
+        try {
+            return new ResponseEntity<>(artistService.createOrUpdate(artistDTO), HttpStatus.OK);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     @GetMapping("/name/{name}")
     public ResponseEntity<List<ArtistDTO>> findByName(@PathVariable String name) {
         try {
@@ -44,19 +54,6 @@ public class ArtistController {
         }
     }
 
-    @PostMapping
-    public ResponseEntity<Artist> create(@RequestBody ArtistDTO artistDTO) {
-        try {
-            System.out.println("DTO recibido: " + artistDTO);
-            System.out.println("Campos: nombre=" + artistDTO.getName() +
-                    ", imageUrl=" + artistDTO.getImageUrl() +
-                    ", spotifyId=" + artistDTO.getSpotifyId());
-            return new ResponseEntity<>(artistService.create(artistDTO), HttpStatus.OK);
-        } catch (Exception e) {
-            e.printStackTrace(); // Imprimir la excepción completa
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
 
     @PutMapping
     public ResponseEntity<Artist> update(@RequestBody ArtistDTO artistDTO) {

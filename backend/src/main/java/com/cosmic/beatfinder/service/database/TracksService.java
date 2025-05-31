@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class TracksService {
@@ -21,8 +22,19 @@ public class TracksService {
         return tracksFactoryService.createTracksDTOs(tracksRepository.findAll());
     }
 
-    public Tracks create(TracksDTO tracksDTO) {
-        return tracksRepository.save(tracksFactoryService.createTracks(tracksDTO));
+
+    public Tracks createOrUpdate(TracksDTO tracksDTO) {
+        Optional<Tracks> existingTrack = tracksRepository.findBySpotifyId(tracksDTO.getSpotifyId());
+
+        if (existingTrack.isPresent()) {
+            Tracks track = existingTrack.get();
+            track.setPreview(tracksDTO.getPreview()); // Actualizar el preview
+            track.setCover(tracksDTO.getCover());    // Actualizar la portada
+            return tracksRepository.save(track);     // Guardar cambios
+        } else {
+            Tracks newTrack = new Tracks(tracksDTO);
+            return tracksRepository.save(newTrack);  // Crear nuevo track
+        }
     }
 
     public Tracks update(TracksDTO tracksDTO) {

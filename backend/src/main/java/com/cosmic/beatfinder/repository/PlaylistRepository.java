@@ -7,4 +7,9 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface PlaylistRepository extends JpaRepository<Playlist, Long> {
     Playlist findByPlaylistId(String playlistId);
+
+
+    void deleteByPlaylistId(String playlistId);
+
+
 }

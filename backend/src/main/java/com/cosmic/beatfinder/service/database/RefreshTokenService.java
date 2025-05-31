@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 
 
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
@@ -18,9 +20,15 @@ public class RefreshTokenService {
 	private RefreshTokenRepository refreshTokenRepository;
 
 	public RefreshTokenDTO createRefreshToken(String email) {
-		RefreshToken refreshToken = new RefreshToken();
+		RefreshToken refreshToken = refreshTokenRepository.findByEmail(email)
+				.orElseGet(() -> {
+					RefreshToken newToken = new RefreshToken();
+					newToken.setEmail(email);
+					return newToken;
+				});
+
 		refreshToken.setToken(UUID.randomUUID().toString());
-		refreshToken.setEmail(email);
+		refreshToken.setLastUsed(ZonedDateTime.now(ZoneId.of("Europe/Madrid")).toInstant());
 		return new RefreshTokenDTO(refreshTokenRepository.save(refreshToken));
 	}
 

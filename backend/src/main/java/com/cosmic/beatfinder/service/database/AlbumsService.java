@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class AlbumsService {
@@ -30,8 +31,17 @@ public class AlbumsService {
         return albumsFactoryService.createAlbumsDTOs(albumsRepository.findByAlbum(album));
     }
 
-    public Albums create(AlbumsDTO albumsDTO) {
-        return albumsRepository.save(albumsFactoryService.createAlbums(albumsDTO));
+    public Albums createOrUpdate(AlbumsDTO albumsDTO) {
+        Optional<Albums> existingAlbum = albumsRepository.findByArtistAndAlbum(albumsDTO.getArtist(), albumsDTO.getAlbum());
+
+        if (existingAlbum.isPresent()) {
+            Albums album = existingAlbum.get();
+            album.setCover(albumsDTO.getCover()); // Actualizar la portada
+            return albumsRepository.save(album); // Guardar cambios
+        } else {
+            Albums newAlbum = new Albums(albumsDTO);
+            return albumsRepository.save(newAlbum); // Crear nuevo álbum
+        }
     }
 
     public Albums update(AlbumsDTO albumsDTO) {

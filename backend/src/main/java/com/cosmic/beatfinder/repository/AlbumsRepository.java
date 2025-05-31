@@ -12,8 +12,6 @@ import java.util.Optional;
 public interface AlbumsRepository extends JpaRepository<Albums, Long> {
 
     List<Albums> findByArtist(String artist);
-
     List<Albums> findByAlbum(String album);
-
-
+    Optional<Albums> findByArtistAndAlbum(String artist, String album);
 }

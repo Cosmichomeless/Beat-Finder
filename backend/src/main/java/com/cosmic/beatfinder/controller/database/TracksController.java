@@ -36,10 +36,11 @@ public class TracksController {
     }
 
     @PostMapping
-    public ResponseEntity<Tracks> create(@RequestBody TracksDTO tracksDTO) {
+    public ResponseEntity<Tracks> createOrUpdate(@RequestBody TracksDTO tracksDTO) {
         try {
-            return new ResponseEntity<>(tracksService.create(tracksDTO), HttpStatus.OK);
+            return new ResponseEntity<>(tracksService.createOrUpdate(tracksDTO), HttpStatus.OK);
         } catch (Exception e) {
+            e.printStackTrace();
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }

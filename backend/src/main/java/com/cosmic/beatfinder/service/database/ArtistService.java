@@ -26,6 +26,45 @@ public List<ArtistDTO> findAll() {
         return artistRepository.save(artistFactoryService.createArtist(artistDTO));
     }
 
+    public Artist createOrUpdate(ArtistDTO artistDTO) {
+        // Primero buscamos por cualquiera de los IDs
+        Artist existingArtist = artistRepository.findBySpotifyId(artistDTO.getSpotifyId())
+                .orElseGet(() -> {
+                    List<Artist> dezeerArtists = artistRepository.findByDezeerId(artistDTO.getDezeerId());
+                    return dezeerArtists.isEmpty() ? null : dezeerArtists.get(0);
+                });
+
+        if (existingArtist != null) {
+            // Actualizamos los datos del artista existente
+            existingArtist.setName(artistDTO.getName());
+            existingArtist.setImage(artistDTO.getImageUrl());
+
+            // Actualizamos los IDs solo si no están en uso por otro artista
+            if (artistDTO.getSpotifyId() != null && !existingArtist.getSpotifyId().equals(artistDTO.getSpotifyId())) {
+                if (artistRepository.findBySpotifyId(artistDTO.getSpotifyId()).isEmpty()) {
+                    existingArtist.setSpotifyId(artistDTO.getSpotifyId());
+                }
+            }
+
+            if (artistDTO.getDezeerId() != null && !existingArtist.getDezeerId().equals(artistDTO.getDezeerId())) {
+                if (artistRepository.findByDezeerId(artistDTO.getDezeerId()).isEmpty()) {
+                    existingArtist.setDezeerId(artistDTO.getDezeerId());
+                }
+            }
+
+            return artistRepository.save(existingArtist);
+        }
+
+        // Si no existe, creamos un nuevo artista
+        Artist newArtist = new Artist();
+        newArtist.setName(artistDTO.getName());
+        newArtist.setImage(artistDTO.getImageUrl());
+        newArtist.setSpotifyId(artistDTO.getSpotifyId());
+        newArtist.setDezeerId(artistDTO.getDezeerId());
+        return artistRepository.save(newArtist);
+    }
+
+
     public Artist update(ArtistDTO artistDTO) {
         return artistRepository.save(artistFactoryService.createArtist(artistDTO));
     }
